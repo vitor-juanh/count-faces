@@ -2,6 +2,7 @@ import React, {Component, Fragment} from 'react';
 import Clarifai from 'clarifai';
 import Navigation from './components/Navigation/Navigation';
 import SignIn from './components/SignIn/SignIn';
+import Rank from './components/Rank/Rank';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import ImgForm from './components/ImgForm/ImgForm';
 import Particles from 'react-particles-js';
@@ -125,8 +126,27 @@ class App extends Component {
       imageURL: '',
       box: {},
       route: 'sign-in',
-      isSignedIn: false
+      isSignedIn: false,
+      user: {
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: ''
+      }
     }
+  }
+
+  loadUser = (data) => {
+    this.setState({user : 
+      {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        entries: data.entries,
+        joined: data.joined
+      }
+    })
   }
 
   calculateFaceLocation = (data) => {
@@ -150,7 +170,7 @@ class App extends Component {
     this.setState({input: event.target.value})
   }
 
-  onButtonSubmit = () => {
+  onPictureSubmit = () => {
 
     this.setState({imageURL: this.state.input})
 
@@ -159,7 +179,22 @@ class App extends Component {
       this.state.input
       //https://www.lojaadcos.com.br/belezacomsaude/app/uploads/2018/10/00.protecao-solar.png
     )
-    .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+    .then(response => {
+      if (response) {
+        fetch('http://localhost:3000/rank', {
+          method: 'put',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            id: this.state.user.id
+          })
+        })
+          .then(response => response.json())
+          .then(count => {
+            this.setState(Object.assign(this.state.user, {entries: count}))
+          })
+      }
+      this.displayFaceBox(this.calculateFaceLocation(response))
+    })
     .catch(err => console.log(err));
   }
 
@@ -180,13 +215,14 @@ class App extends Component {
         <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} />
         { route === 'home' 
           ? <Fragment>
-              <ImgForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit} />
+              <Rank name={this.state.user.name} entries={this.state.user.entries}/>
+              <ImgForm onInputChange={this.onInputChange} onPictureSubmit={this.onPictureSubmit} />
               <FaceRecognition box={box} imageURL={imageURL} />
             </Fragment>
           
           : ( route === 'sign-in' 
-              ? <SignIn onRouteChange={this.onRouteChange} />
-              : <SignUp onRouteChange={this.onRouteChange}/>
+              ? <SignIn loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
+              : <SignUp loadUser={this.loadUser} onRouteChange={this.onRouteChange}/>
 
           )
         }
