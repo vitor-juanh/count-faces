@@ -1,5 +1,4 @@
 import React, {Component, Fragment} from 'react';
-import Clarifai from 'clarifai';
 import Navigation from './components/Navigation/Navigation';
 import SignIn from './components/SignIn/SignIn';
 import Rank from './components/Rank/Rank';
@@ -9,9 +8,7 @@ import Particles from 'react-particles-js';
 import './App.css';
 import SignUp from './components/SignUp/SignUp';
 
-const app = new Clarifai.App({
-  apiKey: 'ac1ef5e064c4496985943c9b8c83b2e8'
- });
+
 
 const particlesOptions = {
   particles: {
@@ -173,14 +170,15 @@ class App extends Component {
   }
 
   onPictureSubmit = () => {
-
     this.setState({imageURL: this.state.input})
-
-    app.models.predict(
-      Clarifai.FACE_DETECT_MODEL, 
-      this.state.input
-      //https://www.lojaadcos.com.br/belezacomsaude/app/uploads/2018/10/00.protecao-solar.png
-    )
+    fetch('http://localhost:3000/imageurl', {
+      method: 'post',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        input: this.state.input
+      })
+    })
+    .then(response => response.json())
     .then(response => {
       if (response) {
         fetch('http://localhost:3000/rank', {
